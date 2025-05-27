@@ -1,0 +1,1 @@
+"""the clip encoder for the text prompts"""

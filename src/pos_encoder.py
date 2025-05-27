@@ -1,0 +1,1 @@
+"""Positional encoder for the stable diffusion model."""
