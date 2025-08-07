@@ -9,17 +9,19 @@ import keras_hub
 
 
 
-pos_emb = keras_hub.layers.PositionEmbedding(sequence_length=50)
-
-
-
 def get_model(img_size, num_classes):
-    inputs = keras.Input(shape=img_size + (3,))
+    # --- Inputs ---
+    image_input = keras.Input(shape=img_size + (3,), name="image_input")
+    # Diffusion models need a time embedding to know the noise level.
+    time_input = keras.Input(shape=(), dtype=tf.int64, name="time_input")
+
+    # --- Time Embedding ---
+    time_embedding = layers.Embedding(input_dim=1000, output_dim=32)(time_input) # Example dims
 
     ### [First half of the network: downsampling inputs] ###
 
     # Entry block
-    x = layers.Conv2D(32, 3, strides=2, padding="same")(inputs)
+    x = layers.Conv2D(32, 3, strides=2, padding="same")(image_input)
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
 
@@ -67,5 +69,5 @@ def get_model(img_size, num_classes):
     outputs = layers.Conv2D(num_classes, 3, activation="softmax", padding="same")(x)
 
     # Define the model
-    model = keras.Model(inputs, outputs)
+    model = keras.Model([image_input, time_input], outputs)
     return model

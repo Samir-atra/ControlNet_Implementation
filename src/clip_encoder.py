@@ -1,35 +1,34 @@
 """the clip encoder for the text prompts"""
 
 import tensorflow as tf
+import keras
 import keras_cv
-import numpy as np
-from keras.preprocessing.image import load_img
 
-#the encoder implementation needs to be wrapped as a custom keras class/model instead of a scrip format.
 
-# Specify the path to your image
-image_path = '/home/samer/Desktop/Beedoo/ControlNet_Implementation/Dataset/image.jpg' #"https://laion.ai/blog/laion-5b/"
+class CLIPTextEncoder(keras.Model):
+    def __init__(self, preset="clip_vit_base_patch16", **kwargs):
+        super().__init__(**kwargs)
+        # Load a preset CLIP model's text components
+        self.tokenizer = keras_cv.models.CLIPTokenizer.from_preset(preset)
+        # We only need the text-related layers from the backbone
+        clip_backbone = keras_cv.models.CLIPBackbone.from_preset(preset)
+        self.text_encoder = clip_backbone.get_layer("text_encoder")
 
-# Load a preset CLIP model
-clip_model = keras_cv.models.CLIPBackbone.from_preset("clip_vit_base_patch16")
+    def call(self, prompts):
+        # Tokenize the text
+        tokenized_text = self.tokenizer(prompts)
+        # Get the text embeddings
+        text_embeddings = self.text_encoder({"tokens": tokenized_text})
+        return text_embeddings
 
-# Create a tokenizer
-tokenizer = keras_cv.models.CLIPTokenizer.from_preset("clip_vit_base_patch16")
 
-# Create image preprocessor
-image_converter = keras_cv.models.CLIPImageConverter(image_size=(512, 512))
+if __name__ == '__main__':
+    # Example usage:
+    text_encoder = CLIPTextEncoder()
+    prompt = "a photograph of an astronaut riding a horse"
+    
+    # You can pass a list of prompts
+    embeddings = text_encoder([prompt, "a beautiful sunset over the mountains"])
 
-# input text prompt
-prompt = input("Enter the text prompt: ")
-
-#load input image
-image = load_img(image_path)
-
-# Tokenize the text
-tokenized_text = tokenizer(prompt)
-
-# Preprocess the image
-processed_image = image_converter(image)
-
-# Get the CLIP model output
-clip_outputs = clip_model({"images": processed_image, "tokens": tokenized_text})
+    print("Prompt:", prompt)
+    print("Embedding shape:", embeddings.shape)
